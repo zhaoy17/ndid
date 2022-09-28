@@ -1,3 +1,3 @@
-module github.com/zhaoy17/did
+module github.com/zhaoy17/ndid
 
 go 1.18
