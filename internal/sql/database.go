@@ -3,19 +3,91 @@ package sql
 import (
 	"context"
 	dbsql "database/sql"
+	"log"
 )
 
+// A wrapper around database/sql. Provide methods that allow higher-level code to
+// perform various action on a SQL database.
 type SqlDatabase struct {
 	Dialect  *SqlDialect
 	ConnPool *dbsql.DB
 }
 
-func (sqldb *SqlDatabase) StartTransaction() error {
+// Begin a transaction, and return a pointer to TransactionManager
+func (sqldb *SqlDatabase) StartTransaction(ctx context.Context) (*TransactionManager, error) {
+	tx, err := sqldb.ConnPool.BeginTx(ctx, &dbsql.TxOptions{})
+	if err != nil {
+		return nil, err
+	}
+	return &TransactionManager{Transaction: tx}, nil
+}
+
+// Execute SQL statement that does not return anything.
+// Return the number of rows affected as well as any error encountered during the process.
+func (sqldb *SqlDatabase) ExecuteSQL(stmt *SqlStmt, ctx context.Context) (int64, error) {
+	return executeSQLWithCtx(nil, sqldb.ConnPool, stmt, ctx)
+}
+
+// Execute a SQL query that returns data from the database.
+// Return key-value pairs of column names and their corresponding value
+func (sqldb *SqlDatabase) ExecuteQuery(stmt *SqlStmt, ctx context.Context) ([]map[string]interface{}, error) {
+	return executeQueryWithCtx(nil, sqldb.ConnPool, stmt, ctx)
+}
+
+// Represent a SQL transaction. Allow users to execute a series of SQL query as a single transaction.
+type TransactionManager struct {
+	Transaction *dbsql.Tx
+}
+
+// Execute SQL statement that does not return anything inside a transaction.
+// Return the number of rows affected as well as any error encountered during the process.
+// Rollback if encountered errors.
+func (txManager *TransactionManager) ExecuteSQL(stmt *SqlStmt, ctx context.Context) (int64, error) {
+	result, err := executeSQLWithCtx(txManager.Transaction, nil, stmt, ctx)
+	if err != nil {
+		txManager.Rollback()
+		return 0, err
+	}
+	return result, nil
+}
+
+// Execute a SQL query that returns data from the database.
+// Return key-value pairs of column names and their corresponding value
+// Rollback if encountered errors.
+func (txManager *TransactionManager) ExecuteQuery(stmt *SqlStmt, ctx context.Context) ([]map[string]interface{}, error) {
+	result, err := executeQueryWithCtx(txManager.Transaction, nil, stmt, ctx)
+	if err != nil {
+		txManager.Rollback()
+		return nil, err
+	}
+	return result, nil
+}
+
+// Rollback all the changes made to the database.
+func (txManager *TransactionManager) Rollback() {
+	err := txManager.Transaction.Rollback()
+	if err != nil {
+		log.Fatal(err)
+	}
+}
+
+// Commit all the changes made to the database.
+func (txManager *TransactionManager) Commit() error {
+	err := txManager.Transaction.Commit()
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
-func (sqldb *SqlDatabase) ExecuteSQL(stmt *SqlStmt, ctx context.Context) (int64, error) {
-	result, err := sqldb.ConnPool.ExecContext(ctx, stmt.Stmt, castStringListToAnyList(stmt.Params))
+func executeSQLWithCtx(tx *dbsql.Tx, conn *dbsql.DB, stmt *SqlStmt, ctx context.Context) (int64, error) {
+	var result dbsql.Result
+	var err error
+	if tx == nil {
+		result, err = conn.ExecContext(ctx, stmt.Stmt, castStringListToAnyList(stmt.Params))
+	} else {
+		result, err = tx.ExecContext(ctx, stmt.Stmt, castStringListToAnyList(stmt.Params))
+	}
 	if err != nil {
 		return 0, err
 	}
@@ -26,8 +98,14 @@ func (sqldb *SqlDatabase) ExecuteSQL(stmt *SqlStmt, ctx context.Context) (int64,
 	return rows, nil
 }
 
-func (sqldb *SqlDatabase) ExecuteQuery(stmt *SqlStmt, ctx context.Context) ([]map[string]interface{}, error) {
-	rows, err := sqldb.ConnPool.QueryContext(ctx, stmt.Stmt, castStringListToAnyList(stmt.Params)...)
+func executeQueryWithCtx(tx *dbsql.Tx, conn *dbsql.DB, stmt *SqlStmt, ctx context.Context) ([]map[string]interface{}, error) {
+	var rows *dbsql.Rows
+	var err error
+	if tx == nil {
+		rows, err = conn.QueryContext(ctx, stmt.Stmt, castStringListToAnyList(stmt.Params)...)
+	} else {
+		rows, err = tx.QueryContext(ctx, stmt.Stmt, castStringListToAnyList(stmt.Params)...)
+	}
 	if err != nil {
 		return nil, err
 	}
