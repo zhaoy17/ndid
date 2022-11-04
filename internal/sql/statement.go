@@ -81,7 +81,7 @@ func (stmt *SelectStmt) GenerateStmt() (res *SqlStmt, err error) {
 
 // Generate SELECT clause and validate each columns selected
 func generateSelectClause(columns []string) (string, error) {
-	numOfCols := cap(columns)
+	numOfCols := len(columns)
 	if numOfCols == 0 {
 		return "*", nil
 	}
@@ -100,7 +100,7 @@ func generateSelectClause(columns []string) (string, error) {
 
 // Generate FROM clause and validate each table that will be queried from
 func generateFromClause(tables []string) (string, error) {
-	numOfTables := cap(tables)
+	numOfTables := len(tables)
 
 	var sb strings.Builder
 	if numOfTables == 0 {

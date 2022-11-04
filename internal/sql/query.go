@@ -54,7 +54,7 @@ func (function *SqlCompositeQueryFunction) ToSQLParameterizedQuery(dialect SqlDi
 		if err != nil {
 			return "", nil, err
 		}
-		index += cap(paramsForF)
+		index += len(paramsForF)
 
 		// check for nested composite query
 		_, isCompositeQuery := f.(*SqlCompositeQueryFunction)
@@ -63,7 +63,7 @@ func (function *SqlCompositeQueryFunction) ToSQLParameterizedQuery(dialect SqlDi
 		} else {
 			stmtSb.WriteString(fmt.Sprintf("(%s)", stmt))
 		}
-		if i < cap(function.functions)-1 {
+		if i < len(function.functions)-1 {
 			stmtSb.WriteString(fmt.Sprintf(" %s ", function.operator))
 		}
 		params = append(params, paramsForF...)
