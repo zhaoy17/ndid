@@ -1,6 +1,6 @@
 package schema
 
-import "github.com/zhaoy17/ndid/internal/validator"
+import datatypes "github.com/zhaoy17/ndid/internal/datatypes"
 
 var ndiDocumentSchema = &NDISchema{
 	SchemaName:  "ndi-document",
@@ -9,36 +9,36 @@ var ndiDocumentSchema = &NDISchema{
 		{
 			FieldName:   "id",
 			Description: "Unique identification of a document",
-			DataType:    &validator.NDIString{},
+			DataType:    &datatypes.NDIString{},
 			Querable:    true,
 		},
 		{
 			FieldName:   "session_id",
 			Description: "",
-			DataType:    &validator.NDIString{},
+			DataType:    &datatypes.NDIString{},
 			Querable:    true,
 		},
 		{
 			FieldName:   "name",
 			Description: "",
-			DataType:    &validator.NDIString{},
+			DataType:    &datatypes.NDIString{},
 			Querable:    true,
 		},
 		{
 			FieldName:   "type",
 			Description: "",
-			DataType:    &validator.NDIString{},
+			DataType:    &datatypes.NDIString{},
 			Querable:    true,
 		},
 		{
 			FieldName:   "datestamp",
 			Description: "",
-			DataType:    &validator.NDIString{},
+			DataType:    &datatypes.NDIString{},
 		},
 		{
 			FieldName:   "full_content",
 			Description: "The content of the document including all the dependencies",
-			DataType:    &validator.NDIString{},
+			DataType:    &datatypes.NDIString{},
 			Querable:    true,
 		},
 	},

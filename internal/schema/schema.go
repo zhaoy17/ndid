@@ -1,6 +1,6 @@
 package schema
 
-import "github.com/zhaoy17/ndid/internal/validator"
+import datatypes "github.com/zhaoy17/ndid/internal/datatypes"
 
 type NDISchema struct {
 	SchemaName   string
@@ -13,7 +13,7 @@ type NDISchema struct {
 type NDIField struct {
 	FieldName   string
 	Description string
-	DataType    validator.NDIDataType
+	DataType    datatypes.NDIDataType
 	Querable    bool
 }
 
